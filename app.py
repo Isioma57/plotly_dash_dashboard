@@ -112,17 +112,20 @@ def make_region_chart(data):
     region_data = (
         data.groupby("Region", as_index=False)
         .agg(Sales=("Sales", "sum"), Profit=("Profit", "sum"))
+        .sort_values("Sales", ascending=True)
     )
 
-    figure = px.treemap(
+    # UPDATED CHART 1: The treemap was replaced with a clearer bar chart.
+    figure = px.bar(
         region_data,
-        path=["Region"],
-        values="Sales",
-        color="Profit",
-        color_continuous_scale=["#DDEAFE", "#5B9CF6", "#173B68"],
-        title="Regional Sales and Profit",
+        y="Region",
+        x=["Sales", "Profit"],
+        orientation="h",
+        barmode="group",
+        title="Sales and Profit by Region",
+        labels={"value": "Amount", "variable": "Measure"},
+        color_discrete_sequence=[COLORS["blue"], COLORS["teal"]],
     )
-    figure.update_traces(marker_line_width=2, marker_line_color="white")
     return polish_figure(figure)
 
 
@@ -147,27 +150,30 @@ def make_customer_chart(data):
     return polish_figure(figure)
 
 
-def make_heatmap_chart(data):
-    category_region = (
-        data.groupby(["Region", "Category"])["Sales"]
-        .sum()
-        .reset_index()
+def make_sales_trend_chart(data):
+    # UPDATED CHART 2: The heatmap was replaced with a monthly sales line chart.
+    monthly_sales = (
+        data.assign(Month=data["Order Date"].dt.to_period("M").dt.to_timestamp())
+        .groupby("Month", as_index=False)
+        .agg(Sales=("Sales", "sum"))
+        .sort_values("Month")
     )
 
-    heatmap_data = category_region.pivot(
-        index="Region",
-        columns="Category",
-        values="Sales",
-    ).fillna(0)
-
-    figure = px.imshow(
-        heatmap_data,
-        text_auto=".2s",
-        aspect="auto",
-        color_continuous_scale=["#EFF6FF", "#93C5FD", "#1D4ED8"],
-        title="Sales by Region and Category",
-        labels={"x": "Category", "y": "Region", "color": "Sales"},
+    figure = px.line(
+        monthly_sales,
+        x="Month",
+        y="Sales",
+        markers=True,
+        title="Monthly Sales Trend",
+        labels={"Month": "Month", "Sales": "Sales"},
+        color_discrete_sequence=[COLORS["blue"]],
     )
+    figure.update_traces(
+        line=dict(width=3),
+        marker=dict(size=7),
+        hovertemplate="<b>%{x|%b %Y}</b><br>Sales: %{y:,.0f}<extra></extra>",
+    )
+    figure.update_xaxes(tickformat="%b\n%Y")
     return polish_figure(figure)
 
 
@@ -181,7 +187,7 @@ def dashboard_values(data):
         make_category_chart(data),
         make_region_chart(data),
         make_customer_chart(data),
-        make_heatmap_chart(data),
+        make_sales_trend_chart(data),
     )
 
 
@@ -300,7 +306,7 @@ app.layout = html.Div(
                     graph_card("category-chart", initial_values[4]),
                     graph_card("region-chart", initial_values[5]),
                     graph_card("customer-chart", initial_values[6]),
-                    graph_card("heatmap-chart", initial_values[7]),
+                    graph_card("trend-chart", initial_values[7]),
                 ],
                 className="chart-grid",
             ),
@@ -327,7 +333,7 @@ app.layout = html.Div(
     Output("category-chart", "figure"),
     Output("region-chart", "figure"),
     Output("customer-chart", "figure"),
-    Output("heatmap-chart", "figure"),
+    Output("trend-chart", "figure"),
     Input("year-filter", "value"),
 )
 def update_dashboard(selected_year):
@@ -344,5 +350,5 @@ def update_dashboard(selected_year):
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8067))
+    port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=False)
