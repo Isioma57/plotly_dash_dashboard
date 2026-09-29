@@ -51,11 +51,15 @@ df = load_data()
 # 2. Reusable calculations and Plotly figures
 # -----------------------------------------------------------------------------
 
+# NEW PALETTE: teal family with coral, indigo and amber accents.
 COLORS = {
     "navy": "#102A43",
-    "blue": "#2563EB",
-    "teal": "#0F9D8A",
     "text": "#243B53",
+    "sales": "#8FD3C3",    # soft mint teal
+    "profit": "#0F766E",   # deep teal
+    "coral": "#F26B5B",
+    "indigo": "#4F46E5",
+    "amber": "#F5A524",
 }
 
 
@@ -84,6 +88,8 @@ def polish_figure(figure):
             x=1,
             title_text="",
         ),
+        bargap=0.25,
+        bargroupgap=0.05,
     )
     figure.update_xaxes(showgrid=False, zeroline=False)
     figure.update_yaxes(gridcolor="#EEF2F7", zeroline=False)
@@ -103,7 +109,7 @@ def make_category_chart(data):
         barmode="group",
         title="Sales and Profit by Category",
         labels={"value": "Amount", "variable": "Measure"},
-        color_discrete_sequence=[COLORS["blue"], COLORS["teal"]],
+        color_discrete_sequence=[COLORS["sales"], COLORS["profit"]],
     )
     return polish_figure(figure)
 
@@ -124,7 +130,7 @@ def make_region_chart(data):
         barmode="group",
         title="Sales and Profit by Region",
         labels={"value": "Amount", "variable": "Measure"},
-        color_discrete_sequence=[COLORS["blue"], COLORS["teal"]],
+        color_discrete_sequence=[COLORS["sales"], COLORS["profit"]],
     )
     return polish_figure(figure)
 
@@ -143,7 +149,8 @@ def make_customer_chart(data):
         color="Profit",
         hover_name="Customer Name",
         size_max=22,
-        color_continuous_scale=["#DDEAFE", "#3B82F6", "#102A43"],
+        # Light points start at a mint that is still visible on white.
+        color_continuous_scale=["#99F6E4", "#14B8A6", "#0F766E", "#134E4A"],
         title="Customer Value: Sales and Profit",
     )
     figure.update_traces(opacity=0.76, marker_line_width=0)
@@ -151,7 +158,6 @@ def make_customer_chart(data):
 
 
 def make_sales_trend_chart(data):
-    # UPDATED CHART 2: The heatmap was replaced with a monthly sales line chart.
     monthly_sales = (
         data.assign(Month=data["Order Date"].dt.to_period("M").dt.to_timestamp())
         .groupby("Month", as_index=False)
@@ -166,7 +172,7 @@ def make_sales_trend_chart(data):
         markers=True,
         title="Monthly Sales Trend",
         labels={"Month": "Month", "Sales": "Sales"},
-        color_discrete_sequence=[COLORS["blue"]],
+        color_discrete_sequence=[COLORS["profit"]],
     )
     figure.update_traces(
         line=dict(width=3),
@@ -280,11 +286,11 @@ app.layout = html.Div(
                         "blue", "total-sales",
                     ),
                     kpi_card(
-                        "Total Profit", initial_values[1], "Profit recorded in the data",
+                        "Total Profit", initial_values[1], "Profit",
                         "teal", "total-profit",
                     ),
                     kpi_card(
-                        "Total Orders", initial_values[2], "Unique customer orders",
+                        "Total Orders", initial_values[2], "Orders",
                         "purple", "total-orders",
                     ),
                     kpi_card(
@@ -304,9 +310,9 @@ app.layout = html.Div(
             html.Div(
                 [
                     graph_card("category-chart", initial_values[4]),
-                    graph_card("region-chart", initial_values[5]),
-                    graph_card("customer-chart", initial_values[6]),
                     graph_card("trend-chart", initial_values[7]),
+                    graph_card("customer-chart", initial_values[6]),
+                    graph_card("region-chart", initial_values[5]),
                 ],
                 className="chart-grid",
             ),
