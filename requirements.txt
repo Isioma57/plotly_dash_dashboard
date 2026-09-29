@@ -1,0 +1,4 @@
+dash==4.4.1
+gunicorn==23.0.0
+pandas==2.2.3
+plotly==7.1.0
